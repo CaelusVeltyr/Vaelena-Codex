@@ -123,7 +123,7 @@ select{font:inherit;font-size:16px;color:var(--ink);background:var(--card);borde
 .seg{display:flex;border:1.5px solid var(--accent);border-radius:999px;overflow:hidden}
 .seg button{flex:1;min-height:44px;border:0;background:none;color:var(--accent);font-family:Cinzel,serif;font-size:13px;letter-spacing:.06em;cursor:pointer}
 .seg button[aria-pressed=true]{background:var(--accent);color:var(--on)}
-.side-tabs{margin-top:12px}.side-tabs a{flex:1;text-align:center;padding:8px 4px;color:var(--accent);text-decoration:none;font-family:Cinzel,serif;font-size:12px;letter-spacing:.06em}.side-tabs a[aria-current=true]{background:var(--accent);color:var(--on)}
+.side-tabs{margin-top:12px}.side-tabs a{flex:1;text-align:center;padding:8px 2px;font-size:11px!important;letter-spacing:.02em!important;color:var(--accent);text-decoration:none;font-family:Cinzel,serif;font-size:12px;letter-spacing:.06em}.side-tabs a[aria-current=true]{background:var(--accent);color:var(--on)}
 .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--accent);color:var(--on);padding:8px 16px;border-radius:999px;font-size:15px;z-index:9}
 </style>
 </head>
@@ -154,7 +154,9 @@ const entryVisible=e=>dm()||(!e.dmOnly&&R(e.id));
 /* Houses and Factions are entries too (kind 'house' / 'faction'): same reveals, masking and publishing, each with its own index. */
 const KINDS={
  house:{route:'houses',title:'Houses',noun:'houses',sub:/^(Bond|Metal)$/,parts:[['VAYLEN FAMILIES','Vaylen',[['HOLY LINEAGES','Holy Lineage'],['FAMILIES OF CENTRAL','Family of Central']]],['FERRAN HOUSES','Ferran',[['GREAT HOUSES','Great House']]]]},
+ system:{route:'systems',title:'Bonds & Systems',tab:'Systems',noun:'entries',sub:/^(Element|Type)$/,parts:[['ELEMENTAL BONDS','Elemental',[['THE FIVE LINEAGES','The Five Lineages'],['HOW BONDS WORK','How Bonds Work'],['CHAMPIONS & CROWNS','Champions & Crowns']]],['FERRAN TRADITIONS','Ferran',[['FERRAN GIFTS','Ferran Gifts']]],['BEYOND THE BONDS','Beyond',[['OTHER POWERS','Other Powers']]]]},
  faction:{route:'factions',title:'Factions',noun:'factions',sub:/^Type$/,parts:[['VAYLEN FACTIONS','Vaylen',[['GOVERNMENT & MILITARY','Government & Military'],['INSTITUTIONS & FAITH','Institutions & Faith']]],['FERRAN FACTIONS','Ferran',[['ORGANIZATIONS & FAITH','Organizations & Faith']]],['IN THE SHADOWS','Shadow',[['SHADOW ORGANIZATIONS','Shadow Organizations']]]]}};
+const KIND_ORDER=['house','faction','system'];
 const isHouse=e=>e.kind==='house';
 const isChar=e=>!e.kind;
 const ofKind=k=>e=>k?e.kind===k:!e.kind;
@@ -293,7 +295,7 @@ const chk=(id,label)=>dm()?`<button class="chk" role="checkbox" aria-checked="${
 const lock=()=>dm()?`<span class="lock" title="DM only, never shown to players">${LOCK}</span>`:'';
 
 function top(back){
-  return `<div class="top">${back?`<a class="btn plain" href="${back}">${BACK}<span class="cz">${back==='#home'?'Codex':back==='#houses'?'Houses':back==='#factions'?'Factions':'Characters'}</span></a>`:`<span class="cz small muted">SHATTERED REALMS</span>`}
+  return `<div class="top">${back?`<a class="btn plain" href="${back}">${BACK}<span class="cz">${back==='#home'?'Codex':back==='#houses'?'Houses':back==='#factions'?'Factions':back==='#systems'?'Bonds & Systems':'Characters'}</span></a>`:`<span class="cz small muted">SHATTERED REALMS</span>`}
   ${canDM?`<a class="btn ${dm()?'solid':''}" href="#dm-settings">${dm()?'DM VIEW':'PLAYER VIEW'}</a>`:`<span class="badge">PLAYER VIEW</span>`}</div>`;
 }
 
@@ -307,8 +309,8 @@ function viewHome(){
   ${pinned.length?`<h2>◆ PINNED FOR TONIGHT</h2>${pinned.map(rowFor).join('')}`:''}
   <h2>◆ BROWSE</h2><div class="tiles">
    <a class="tile" href="#characters"><b>Characters</b><span class="muted small">${vis.filter(e=>!e.dmOnly&&isChar(e)).length} entries</span></a>
-   ${Object.entries(KINDS).map(([k,K])=>{const n=vis.filter(ofKind(k)).length;return `<a class="tile" href="#${K.route}"><b>${K.title}</b><span class="muted small">${n} ${n===1?'entry':'entries'}</span></a>`}).join('')}
-   ${['History','Bonds & Systems','Terminology Glossary'].map(t=>`<div class="tile off" aria-disabled="true"><b>${t}</b><span class="muted small">Coming next</span></div>`).join('')}
+   ${KIND_ORDER.map(k=>[k,KINDS[k]]).map(([k,K])=>{const n=vis.filter(ofKind(k)).length;return `<a class="tile" href="#${K.route}"><b>${K.title}</b><span class="muted small">${n} ${n===1?'entry':'entries'}</span></a>`}).join('')}
+   ${['History','Terminology Glossary'].map(t=>`<div class="tile off" aria-disabled="true"><b>${t}</b><span class="muted small">Coming next</span></div>`).join('')}
   </div>
   ${dm()&&META&&META.changes.length?`<p style="margin-top:18px"><a class="btn" href="#dm-settings">${META.changes.length} changes to review</a></p>`:''}`;
 }
@@ -344,7 +346,7 @@ function sidebar(cur,kind){
   const vis=all.filter(ofKind(kind));
   const f=sq?vis.filter(e=>e.headline.toLowerCase().includes(sq.toLowerCase())):vis;
   const link=e=>`<a class="slink ${e.id===cur?'on':''} ${dm()&&!R(e.id)&&!e.dmOnly?'dim':''}" href="#c-${e.id}" ${e.id===cur?'aria-current="page"':''}>${esc(e.headline)}</a>`;
-  const tabs=`<div class="seg side-tabs"><a href="#characters" aria-current="${!kind}">Characters</a>${Object.entries(KINDS).map(([k,K])=>`<a href="#${K.route}" aria-current="${kind===k}">${K.title}</a>`).join('')}</div>`;
+  const tabs=`<div class="seg side-tabs"><a href="#characters" aria-current="${!kind}">Characters</a>${KIND_ORDER.map(k=>[k,KINDS[k]]).map(([k,K])=>`<a href="#${K.route}" aria-current="${kind===k}">${K.tab||K.title}</a>`).join('')}</div>`;
   if(kind) return `<a class="brand" href="#home">The Vaelena Codex</a>${tabs}
   <label class="search side"><span class="muted" aria-hidden="true">⌕</span><input id="sq" type="search" placeholder="Filter ${KINDS[kind].noun}" value="${esc(sq)}" aria-label="Filter ${KINDS[kind].noun}"></label>
   <nav aria-label="${KINDS[kind].title}">${kindGroups(kind,f).map(([title,gs,cw])=>gs.filter(g=>g[1].length).map(([t,l])=>`<div class="sgroup"><div class="cz slabel">${t.startsWith(cw)?t:cw+' · '+t}</div>${l.map(link).join('')}</div>`).join('')).join('')||`<p class="muted small">No ${KINDS[kind].noun} to show.</p>`}</nav>
@@ -510,6 +512,7 @@ function render(){
   if(h==='characters') html=viewList();
   else if(h==='houses') html=viewKind('house');
   else if(h==='factions') html=viewKind('faction');
+  else if(h==='systems') html=viewKind('system');
   else if(h==='dm-settings') html=viewSettings();
   else if(h.startsWith('c-')){ const x=h.slice(2); const e=byId[x]||CUR.entries.find(q=>pubId(q)===x)||(LX&&canDM?(()=>{const r=LX.find(q=>pubId(q)===x||q.id===x); return r&&byId[r.id]?byId[r.id]:(r&&byId[pubId(r)])})():null); html=viewEntry(e); if(e&&entryVisible(e)) th=sh(e) }
   else html=viewHome();
@@ -518,7 +521,7 @@ function render(){
   const y=scrollY, f=document.activeElement&&document.activeElement.id, draft=document.getElementById('ed');
   const dv=draft&&draft.value;
   const curId=h.startsWith('c-')?h.slice(2):null;
-  const onKind=h==='houses'?'house':h==='factions'?'faction':(curId&&byId[curId]&&byId[curId].kind)||null;
+  const onKind=h==='houses'?'house':h==='factions'?'faction':h==='systems'?'system':(curId&&byId[curId]&&byId[curId].kind)||null;
   app.innerHTML=wide()?`<div class="desk"><aside class="side">${sidebar(curId,onKind)}</aside><main class="wrap">${html}</main></div>`:`<div class="wrap">${html}</div>`;
   scrollTo(0,y);
   const ed=document.getElementById('ed'); if(ed&&dv!=null){ ed.value=dv; if(f==='ed') ed.focus() }
@@ -527,7 +530,7 @@ function render(){
 }
 
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
-const PUB_V=16;
+const PUB_V=17;
 let chain=Promise.resolve();
 const queue=fn=>{chain=chain.then(fn).catch(()=>toast('Couldn’t save that change. Check your connection and try again.')); return chain};
 async function save(){
