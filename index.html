@@ -116,6 +116,7 @@ select{font:inherit;font-size:16px;color:var(--ink);background:var(--card);borde
 .seg{display:flex;border:1.5px solid var(--accent);border-radius:999px;overflow:hidden}
 .seg button{flex:1;min-height:44px;border:0;background:none;color:var(--accent);font-family:Cinzel,serif;font-size:13px;letter-spacing:.06em;cursor:pointer}
 .seg button[aria-pressed=true]{background:var(--accent);color:var(--on)}
+.side-tabs{margin-top:12px}.side-tabs a{flex:1;text-align:center;padding:8px 4px;color:var(--accent);text-decoration:none;font-family:Cinzel,serif;font-size:12px;letter-spacing:.06em}.side-tabs a[aria-current=true]{background:var(--accent);color:var(--on)}
 .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--accent);color:var(--on);padding:8px 16px;border-radius:999px;font-size:15px;z-index:9}
 </style>
 </head>
@@ -143,6 +144,16 @@ const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'
 const dm=()=>canDM&&mode==='dm';
 const R=id=>CUR.isRev(id);
 const entryVisible=e=>dm()||(!e.dmOnly&&R(e.id));
+/* Houses are entries too (kind 'house'): same reveals, masking and publishing, with their own index. */
+const isHouse=e=>e.kind==='house';
+const isChar=e=>!isHouse(e);
+const HOUSE_SECTIONS=[['VAYLEN HOUSES','Vaylen',[['HOLY LINEAGES','Holy Lineage'],['FAMILIES OF CENTRAL','Family of Central']]],['FERRAN HOUSES','Ferran',[['GREAT HOUSES','Great House']]]];
+function houseGroups(list){
+  return HOUSE_SECTIONS.map(([title,cul,groups])=>{ const mine=list.filter(e=>culture(e)===cul);
+    const gs=groups.map(([t,g])=>[t,mine.filter(e=>e.houseGroup===g)]);
+    const rest=mine.filter(e=>!groups.some(([,g])=>e.houseGroup===g)); if(rest.length) gs.push(['OTHER',rest]);
+    return [title,gs] });
+}
 const sh=e=>e.dmOnly?'Parchment':(e.theme||themes[e.id]||(META&&META.defaultThemes||{})[e.id]||BUILTIN_THEMES[K(e.id)]||'Parchment');
 
 /* Every fact and line splits into a short headline and its details. The details are a separate reveal, because that's where most spoilers live. */
@@ -216,7 +227,7 @@ function mask(t){
 function project(e){
   if(e.dmOnly||!rev.has(e.id)) return null;
   const names=e.names.filter(n=>rev.has(n.id));
-  const P={id:pubId(e), headline:e.headline, pc:e.pc, portrait:PORTRAITS[K(e.id)]&&PORTRAITS[K(e.id)].head&&rev.has(portraitId(e))?PORTRAITS[K(e.id)].head:null, fullBody:PORTRAITS[K(e.id)]&&PORTRAITS[K(e.id)].full&&rev.has(fullId(e))?PORTRAITS[K(e.id)].full:null, gallery:((PORTRAITS[K(e.id)]||{}).gallery||[]).filter(g=>rev.has(galleryId(e,g))).map(({dmNote,...g})=>g), culture:culture(e), circle:isCircle(e)&&rev.has(circleId(e)), dmOnly:false, theme:sh(e),
+  const P={id:pubId(e), headline:e.headline, pc:e.pc, ...(isHouse(e)?{kind:'house',houseGroup:e.houseGroup||null}:{}), portrait:PORTRAITS[K(e.id)]&&PORTRAITS[K(e.id)].head&&rev.has(portraitId(e))?PORTRAITS[K(e.id)].head:null, fullBody:PORTRAITS[K(e.id)]&&PORTRAITS[K(e.id)].full&&rev.has(fullId(e))?PORTRAITS[K(e.id)].full:null, gallery:((PORTRAITS[K(e.id)]||{}).gallery||[]).filter(g=>rev.has(galleryId(e,g))).map(({dmNote,...g})=>g), culture:culture(e), circle:isCircle(e)&&rev.has(circleId(e)), dmOnly:false, theme:sh(e),
     fullName:names.some(n=>n.label==='Full name')?e.fullName:null, names,
     facts:e.facts.filter(f=>rev.has(f.id)).map(f=>({id:f.id,label:f.label,text:joinRevealed(splitFact(f.text,f.label),f.id)})),
     sections:e.sections.filter(s=>!s.dm&&rev.has(s.id)).map(s=>({id:s.id,heading:s.heading,dm:false,items:s.items.filter(i=>rev.has(i.id)).map(i=>({id:i.id,kind:i.kind,text:joinRevealed(splitItem(i.text,s.heading),i.id),sub:i.sub.filter((x,k)=>rev.has(did(i.id)+'/s'+k))}))}))};
@@ -271,7 +282,7 @@ const chk=(id,label)=>dm()?`<button class="chk" role="checkbox" aria-checked="${
 const lock=()=>dm()?`<span class="lock" title="DM only, never shown to players">${LOCK}</span>`:'';
 
 function top(back){
-  return `<div class="top">${back?`<a class="btn plain" href="${back}">${BACK}<span class="cz">${back==='#home'?'Codex':'Characters'}</span></a>`:`<span class="cz small muted">SHATTERED REALMS</span>`}
+  return `<div class="top">${back?`<a class="btn plain" href="${back}">${BACK}<span class="cz">${back==='#home'?'Codex':back==='#houses'?'Houses':'Characters'}</span></a>`:`<span class="cz small muted">SHATTERED REALMS</span>`}
   ${canDM?`<a class="btn ${dm()?'solid':''}" href="#dm-settings">${dm()?'DM VIEW':'PLAYER VIEW'}</a>`:`<span class="badge">PLAYER VIEW</span>`}</div>`;
 }
 
@@ -280,12 +291,13 @@ function viewHome(){
   const res=q?vis.filter(e=>(e.headline+' '+(dm()?e.title+' '+e.names.map(n=>n.value).join(' '):e.names.filter(n=>R(n.id)).map(n=>n.value).join(' '))).toLowerCase().includes(q.toLowerCase())):[];
   const pinned=pins.map(id=>byId[id]).filter(e=>e&&entryVisible(e));
   return `${top()}<h1 style="margin-top:18px">The Vaelena Codex</h1><div class="rule"></div><div class="rule2"></div>${window.CODEX_STATIC?`<p class="muted small">Player edition · updated ${esc(window.CODEX_STATIC.exportedAt)}</p>`:''}
-  <label class="search"><span class="muted" aria-hidden="true">⌕</span><input id="q" type="search" placeholder="Search characters" value="${esc(q)}" aria-label="Search characters"></label>
-  ${q?`<h2>RESULTS</h2>${res.length?res.map(rowFor).join(''):`<p class="empty">No characters match “${esc(q)}”.</p>`}`:''}
+  <label class="search"><span class="muted" aria-hidden="true">⌕</span><input id="q" type="search" placeholder="Search the Codex" value="${esc(q)}" aria-label="Search the Codex"></label>
+  ${q?`<h2>RESULTS</h2>${res.length?res.map(rowFor).join(''):`<p class="empty">Nothing matches “${esc(q)}”.</p>`}`:''}
   ${pinned.length?`<h2>◆ PINNED FOR TONIGHT</h2>${pinned.map(rowFor).join('')}`:''}
   <h2>◆ BROWSE</h2><div class="tiles">
-   <a class="tile" href="#characters"><b>Characters</b><span class="muted small">${vis.filter(e=>!e.dmOnly).length} entries</span></a>
-   ${['Houses','Factions','History','Bonds & Systems','Terminology Glossary'].map(t=>`<div class="tile off" aria-disabled="true"><b>${t}</b><span class="muted small">Coming next</span></div>`).join('')}
+   <a class="tile" href="#characters"><b>Characters</b><span class="muted small">${vis.filter(e=>!e.dmOnly&&isChar(e)).length} entries</span></a>
+   <a class="tile" href="#houses"><b>Houses</b><span class="muted small">${vis.filter(isHouse).length} ${vis.filter(isHouse).length===1?'entry':'entries'}</span></a>
+   ${['Factions','History','Bonds & Systems','Terminology Glossary'].map(t=>`<div class="tile off" aria-disabled="true"><b>${t}</b><span class="muted small">Coming next</span></div>`).join('')}
   </div>
   ${dm()&&META&&META.changes.length?`<p style="margin-top:18px"><a class="btn" href="#dm-settings">${META.changes.length} changes to review</a></p>`:''}`;
 }
@@ -293,7 +305,8 @@ function counts(e){ let n=0,t=0; const add=id=>{t++; if(R(id)) n++};
   add(e.id); if(PORTRAITS[K(e.id)]&&PORTRAITS[K(e.id)].head) add(portraitId(e)); if(PORTRAITS[K(e.id)]&&PORTRAITS[K(e.id)].full) add(fullId(e)); ((PORTRAITS[K(e.id)]||{}).gallery||[]).forEach(g=>add(galleryId(e,g))); e.names.forEach(x=>add(x.id)); e.facts.forEach(x=>{add(x.id); detailIds(x.id,splitFact(x.text,x.label),null).forEach(add)});
   e.sections.filter(s=>!s.dm).forEach(s=>{add(s.id);s.items.forEach(i=>{add(i.id); detailIds(i.id,splitItem(i.text,s.heading),i.sub).forEach(add)})}); return `${n}/${t}` }
 function rowFor(e){
-  const sub=e.dmOnly?'DM file':dm()?(e.names[0]?e.names[0].value.replace(/\s*\(.*$/,''):''):e.names.filter(n=>R(n.id)).map(n=>n.value.replace(/\s*\(.*$/,'')).join(' · ');
+  const hf=isHouse(e)&&e.facts.find(f=>/^(Bond|Metal)$/.test(f.label)&&(dm()||R(f.id)));
+  const sub=hf?splitFact(hf.text,hf.label).short:isHouse(e)?'':e.dmOnly?'DM file':dm()?(e.names[0]?e.names[0].value.replace(/\s*\(.*$/,''):''):e.names.filter(n=>R(n.id)).map(n=>n.value.replace(/\s*\(.*$/,'')).join(' · ');
   return `<div class="row ${dm()&&!R(e.id)&&!e.dmOnly?'dim':''}">${e.dmOnly?lock():chk(e.id,e.headline+' entry')}
    <a class="name" href="#c-${e.id}"><b>${esc(e.headline)}</b>${sub?`<span class="muted small">${esc(sub)}</span>`:''}</a>
    ${dm()&&!e.dmOnly?`<span class="muted small" title="Items revealed">${counts(e)}</span>`:''}</div>`;
@@ -315,18 +328,33 @@ const circleId=e=>e.id+'/group/circle';
 const inCircle=e=>dm()?isCircle(e):!!e.circle;
 /* Desktop: a standing index of characters beside whatever page is open. */
 const wide=()=>matchMedia('(min-width:1000px)').matches;
-function sidebar(cur){
-  const vis=CUR.entries.filter(entryVisible).sort((a,b)=>a.headline.localeCompare(b.headline));
+function sidebar(cur,houses){
+  const all=CUR.entries.filter(entryVisible).sort((a,b)=>a.headline.localeCompare(b.headline));
+  const vis=all.filter(houses?isHouse:isChar);
   const f=sq?vis.filter(e=>e.headline.toLowerCase().includes(sq.toLowerCase())):vis;
+  const link=e=>`<a class="slink ${e.id===cur?'on':''} ${dm()&&!R(e.id)&&!e.dmOnly?'dim':''}" href="#c-${e.id}" ${e.id===cur?'aria-current="page"':''}>${esc(e.headline)}</a>`;
+  const tabs=`<div class="seg side-tabs"><a href="#characters" aria-current="${!houses}">Characters</a><a href="#houses" aria-current="${!!houses}">Houses</a></div>`;
+  if(houses) return `<a class="brand" href="#home">The Vaelena Codex</a>${tabs}
+  <label class="search side"><span class="muted" aria-hidden="true">⌕</span><input id="sq" type="search" placeholder="Filter houses" value="${esc(sq)}" aria-label="Filter houses"></label>
+  <nav aria-label="Houses">${houseGroups(f).map(([title,gs])=>gs.filter(g=>g[1].length).map(([t,l])=>`<div class="sgroup"><div class="cz slabel">${title.split(' ')[0]} · ${t}</div>${l.map(link).join('')}</div>`).join('')).join('')||'<p class="muted small">No houses to show.</p>'}</nav>
+  ${canDM?`<a class="slink set" href="#dm-settings">DM Settings</a>`:''}`;
   const npc=f.filter(e=>!e.pc&&!e.dmOnly&&!inCircle(e));
   const groups=[['Player Characters',f.filter(e=>e.pc)],['Vaylen NPCs',npc.filter(e=>culture(e)==='Vaylen')],['Ferran NPCs',npc.filter(e=>culture(e)==='Ferran')],['Ancient Figures',npc.filter(e=>culture(e)==='Ancient')],['Companions & Spirits',npc.filter(e=>culture(e)==='Companion')],['The Circle',f.filter(e=>!e.pc&&!e.dmOnly&&inCircle(e))],['DM Files',f.filter(e=>e.dmOnly)]];
-  return `<a class="brand" href="#home">The Vaelena Codex</a>
+  return `<a class="brand" href="#home">The Vaelena Codex</a>${tabs}
   <label class="search side"><span class="muted" aria-hidden="true">⌕</span><input id="sq" type="search" placeholder="Filter characters" value="${esc(sq)}" aria-label="Filter characters"></label>
   <nav aria-label="Characters">${groups.filter(g=>g[1].length).map(([t,l])=>`<div class="sgroup"><div class="cz slabel">${t}</div>${l.map(e=>`<a class="slink ${e.id===cur?'on':''} ${dm()&&!R(e.id)&&!e.dmOnly?'dim':''}" href="#c-${e.id}" ${e.id===cur?'aria-current="page"':''}>${esc(e.headline)}</a>`).join('')}</div>`).join('')||'<p class="muted small">No characters to show.</p>'}</nav>
   ${canDM?`<a class="slink set" href="#dm-settings">DM Settings</a>`:''}`;
 }
+function groupBlock(t,l,label){const shut=closedGroups.includes(label||t);return `<div class="sec"><div class="sechead"><button class="toggle" data-act="group" data-id="${esc(label||t)}" aria-expanded="${!shut}">◆ ${t}<span><span class="count">${l.length}</span>${shut?'+':'−'}</span></button></div>${shut?'':`<div style="padding-bottom:8px">${l.map(rowFor).join('')}</div>`}</div>`}
+function viewHouses(){
+  const vis=CUR.entries.filter(e=>isHouse(e)&&entryVisible(e)).sort((a,b)=>a.headline.localeCompare(b.headline));
+  const parts=houseGroups(vis).filter(([,gs])=>gs.some(g=>g[1].length));
+  return `${top('#home')}<h1 style="margin-top:18px">Houses</h1><div class="rule"></div><div class="rule2"></div>
+  ${!vis.length?'<p class="empty">No houses have been revealed yet.</p>':''}
+  ${parts.map(([title,gs])=>`<h2>◆ ${title}</h2>${gs.filter(g=>g[1].length).map(([t,l])=>groupBlock(t,l,title+' · '+t)).join('')}`).join('')}`;
+}
 function viewList(){
-  const vis=CUR.entries.filter(entryVisible).sort((a,b)=>a.headline.localeCompare(b.headline));
+  const vis=CUR.entries.filter(e=>isChar(e)&&entryVisible(e)).sort((a,b)=>a.headline.localeCompare(b.headline));
   const npc=vis.filter(e=>!e.pc&&!e.dmOnly&&!inCircle(e));
   const groups=[['PLAYER CHARACTERS',vis.filter(e=>e.pc)],['VAYLEN NPCS',npc.filter(e=>culture(e)==='Vaylen')],['FERRAN NPCS',npc.filter(e=>culture(e)==='Ferran')],['ANCIENT FIGURES',npc.filter(e=>culture(e)==='Ancient')],['COMPANIONS & SPIRITS',npc.filter(e=>culture(e)==='Companion')],['THE CIRCLE',vis.filter(e=>!e.pc&&!e.dmOnly&&inCircle(e))],['DM FILES',vis.filter(e=>e.dmOnly)]];
   return `${top('#home')}<h1 style="margin-top:18px">Characters</h1><div class="rule"></div><div class="rule2"></div>
@@ -359,7 +387,7 @@ const portraitId=e=>e.id+'/portrait';
 const fullId=e=>e.id+'/fullbody';
 function portraitBlock(e){
   const p=dm()?(PORTRAITS[K(e.id)]||{}).head:e.portrait;
-  const crest=`<div class="crest" aria-hidden="true">${esc(e.headline.replace(/^The /,'')[0])}</div>`;
+  const crest=`<div class="crest" aria-hidden="true">${esc(e.headline.replace(/^(The|House) /,'')[0])}</div>`;
   if(!p) return crest;
   return `<figure class="portrait ${dm()&&!R(portraitId(e))?'dim':''}"><img src="${esc(p.src)}" alt="${esc(p.alt)}" loading="lazy" width="${p.w||480}" height="${p.h||600}"></figure>${dm()?`<div class="tool" style="margin-top:4px"><span class="chip" style="padding-left:0">${chk(portraitId(e),'portrait')} PORTRAIT ${R(portraitId(e))?'· REVEALED':'· HIDDEN'}</span></div>`:''}`;
 }
@@ -375,13 +403,14 @@ function fullBodyBlock(e){
   return out;
 }
 function viewEntry(e){
-  if(!e) return `${top('#characters')}<p class="empty">That entry doesn't exist.</p>`;
-  if(!entryVisible(e)) return `${top('#characters')}<div class="empty"><p class="cz">NOT YET DISCOVERED</p><p>This entry hasn't been revealed to players.</p></div>`;
+  const back=e&&isHouse(e)?'#houses':'#characters';
+  if(!e) return `${top(back)}<p class="empty">That entry doesn't exist.</p>`;
+  if(!entryVisible(e)) return `${top(back)}<div class="empty"><p class="cz">NOT YET DISCOVERED</p><p>This entry hasn't been revealed to players.</p></div>`;
   const names=e.names.filter(n=>dm()||R(n.id));
   const facts=e.facts.filter(f=>dm()||R(f.id));
   const secs=e.sections.filter(s=>dm()||(!s.dm&&R(s.id)));
   const pinned=pins.includes(e.id);
-  return `${top('#characters')}
+  return `${top(back)}
   <div class="entry"><div class="ent-a">
   ${portraitBlock(e)}
   <div class="center">${e.names.some(n=>n.label==='Full name')&&e.facts.some(f=>f.label==='Cognomen')?'<div class="cz small muted">COGNOMEN</div>':''}<h1>${esc(e.headline)}</h1></div>
@@ -468,6 +497,7 @@ function render(){
   const h=location.hash.slice(1)||'home';
   let html, th='Parchment';
   if(h==='characters') html=viewList();
+  else if(h==='houses') html=viewHouses();
   else if(h==='dm-settings') html=viewSettings();
   else if(h.startsWith('c-')){ const x=h.slice(2); const e=byId[x]||CUR.entries.find(q=>pubId(q)===x)||(LX&&canDM?(()=>{const r=LX.find(q=>pubId(q)===x||q.id===x); return r&&byId[r.id]?byId[r.id]:(r&&byId[pubId(r)])})():null); html=viewEntry(e); if(e&&entryVisible(e)) th=sh(e) }
   else html=viewHome();
@@ -476,7 +506,8 @@ function render(){
   const y=scrollY, f=document.activeElement&&document.activeElement.id, draft=document.getElementById('ed');
   const dv=draft&&draft.value;
   const curId=h.startsWith('c-')?h.slice(2):null;
-  app.innerHTML=wide()?`<div class="desk"><aside class="side">${sidebar(curId)}</aside><main class="wrap">${html}</main></div>`:`<div class="wrap">${html}</div>`;
+  const onHouse=h==='houses'||(curId&&byId[curId]&&isHouse(byId[curId]));
+  app.innerHTML=wide()?`<div class="desk"><aside class="side">${sidebar(curId,onHouse)}</aside><main class="wrap">${html}</main></div>`:`<div class="wrap">${html}</div>`;
   scrollTo(0,y);
   const ed=document.getElementById('ed'); if(ed&&dv!=null){ ed.value=dv; if(f==='ed') ed.focus() }
   if(f==='sq'){const i=document.getElementById('sq'); i.focus(); i.setSelectionRange(i.value.length,i.value.length)}
@@ -484,7 +515,7 @@ function render(){
 }
 
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
-const PUB_V=13;
+const PUB_V=14;
 let chain=Promise.resolve();
 const queue=fn=>{chain=chain.then(fn).catch(()=>toast('Couldn’t save that change. Check your connection and try again.')); return chain};
 async function save(){
@@ -509,7 +540,7 @@ async function exportPlayer(btn){
     const i=page.indexOf('<script>');
     const out=page.slice(0,i)+`<script>window.CODEX_STATIC=${data}<\/script>\n`+page.slice(i);
     await dl.save({filename:'vaelena-codex-players.html',data:out});
-    toast(`Exported ${entries.length} revealed ${entries.length===1?'character':'characters'}`);
+    toast(`Exported ${entries.length} revealed ${entries.length===1?'entry':'entries'}`);
   }catch(err){ toast('The export didn’t finish. Try again.') }
   btn.disabled=false; btn.textContent='⇩ EXPORT PLAYER EDITION';
 }
@@ -566,7 +597,7 @@ async function importSeed(){
   if(LORE) for(const e of LORE) if(!keep.has(e.id)) await db.doc('lore/'+e.id).delete();
   META={builtAt:seed.builtAt,changes:seed.changes,defaultThemes:seed.defaultThemes};
   await db.doc('lore-meta/index').set(META);
-  toast(`Imported ${seed.entries.length} characters`);
+  toast(`Imported ${seed.entries.length} entries`);
   return true;
 }
 function startDM(){
