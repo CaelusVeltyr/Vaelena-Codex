@@ -32,6 +32,28 @@
 .t-eclipse{--bg:#100D06;--card:#1B160A;--ink:#F1E4B4;--muted:#B8A46A;--accent:#E9B52A;--rule:#A87A10;--line:#3A3015;--on:#100D06}
 .t-eclipse .crest{background:radial-gradient(circle at 50% 50%,#0A0803 52%,#3A2A06 64%,#100D06 78%);color:#E9B52A;box-shadow:0 0 0 1px #A87A10,0 0 28px rgba(233,181,42,.28)}
 .t-eclipse .portrait{box-shadow:0 0 0 1px #A87A10,0 0 30px rgba(233,181,42,.22)}
+.t-flameborn{--bg:#1C0A05;--card:#2A1009;--ink:#FBE6D4;--muted:#D9A688;--accent:#FF7A2F;--rule:#E4572E;--line:#4A1E12;--on:#1C0A05}
+.t-flameborn .crest,.t-flameborn .portrait{box-shadow:0 0 0 1px #E4572E,0 0 26px rgba(255,122,47,.35)}
+.t-tidewatcher{--bg:#071A26;--card:#0C2636;--ink:#DDF1F7;--muted:#8FB8C8;--accent:#3FB6D9;--rule:#1F8AB0;--line:#173B4E;--on:#071A26}
+.t-tidewatcher .crest,.t-tidewatcher .portrait{box-shadow:0 0 0 1px #1F8AB0,0 0 26px rgba(63,182,217,.3)}
+.t-windrider{--bg:#EEF5F4;--card:#F9FCFC;--ink:#1A2A2B;--muted:#55706F;--accent:#2C7A75;--rule:#7FBDB5;--line:#C5DCD9;--on:#F9FCFC}
+.t-windrider .crest,.t-windrider .portrait{box-shadow:0 0 0 1px #7FBDB5,0 0 26px rgba(127,189,181,.45)}
+.t-stonebreaker{--bg:#E4E1D6;--card:#F2F0E8;--ink:#23221C;--muted:#5F5B4C;--accent:#5C4A2C;--rule:#8A7448;--line:#C4BFAD;--on:#F2F0E8}
+.t-stonebreaker .crest,.t-stonebreaker .portrait{box-shadow:0 0 0 1px #8A7448,0 0 26px rgba(138,116,72,.3)}
+.t-stormcaller{--bg:#0D0F1F;--card:#161A33;--ink:#E8EAFF;--muted:#A3A8D6;--accent:#9AAAFF;--rule:#F2E15B;--line:#2A2F55;--on:#0D0F1F}
+.t-stormcaller .crest,.t-stormcaller .portrait{box-shadow:0 0 0 1px #F2E15B,0 0 26px rgba(242,225,91,.3)}
+.t-cirtenos-silver{--bg:#EDEFF2;--card:#F8F9FB;--ink:#1E232B;--muted:#5D6573;--accent:#4A5669;--rule:#A7B0BE;--line:#CDD2DA;--on:#F8F9FB}
+.t-cirtenos-silver .crest,.t-cirtenos-silver .portrait{box-shadow:0 0 0 1px #A7B0BE,0 0 26px rgba(167,176,190,.55)}
+.t-farlos-tin{--bg:#D7DAD6;--card:#E7E9E5;--ink:#202428;--muted:#525960;--accent:#46525D;--rule:#878F96;--line:#B5BBBE;--on:#E7E9E5}
+.t-farlos-tin .crest,.t-farlos-tin .portrait{box-shadow:0 0 0 1px #878F96,0 0 26px rgba(135,143,150,.4)}
+.t-jurn-brass{--bg:#F0E8CF;--card:#F9F4E3;--ink:#2D2512;--muted:#6B5C34;--accent:#7A611D;--rule:#B5953F;--line:#DACA97;--on:#F9F4E3}
+.t-jurn-brass .crest,.t-jurn-brass .portrait{box-shadow:0 0 0 1px #B5953F,0 0 26px rgba(181,149,63,.4)}
+.t-nersi-copper{--bg:#13201E;--card:#1B2C29;--ink:#F1E2D6;--muted:#B8A08E;--accent:#E08A52;--rule:#4FA38E;--line:#2C4440;--on:#13201E}
+.t-nersi-copper .crest,.t-nersi-copper .portrait{box-shadow:0 0 0 1px #4FA38E,0 0 26px rgba(224,138,82,.3)}
+.t-sarlei-iron{--bg:#161414;--card:#211D1C;--ink:#E9E2DE;--muted:#A8988F;--accent:#C4614A;--rule:#6B5F5A;--line:#3A3230;--on:#161414}
+.t-sarlei-iron .crest,.t-sarlei-iron .portrait{box-shadow:0 0 0 1px #6B5F5A,0 0 26px rgba(196,97,74,.28)}
+.t-vortan-gold{--bg:#0F1628;--card:#18213A;--ink:#F5ECD2;--muted:#C7B98F;--accent:#E6C15A;--rule:#C9A23A;--line:#2B3654;--on:#0F1628}
+.t-vortan-gold .crest,.t-vortan-gold .portrait{box-shadow:0 0 0 1px #C9A23A,0 0 26px rgba(230,193,90,.3)}
 .t-tidewater{--bg:#E7EEF0;--card:#F6FAFB;--ink:#14262E;--muted:#4C626B;--accent:#1F5A73;--rule:#2C7590;--line:#AFC4CB;--on:#F6FAFB}
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 "EB Garamond",Georgia,serif;overflow-x:clip}
@@ -135,7 +157,7 @@ select{font:inherit;font-size:16px;color:var(--ink);background:var(--card);borde
 const CHECK='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--on)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
 const LOCK='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 const BACK='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
-const THEMES=['Parchment','Embershade','Dawnwarden','The Raven','Shadowsong','Reaver','Steelforged','Tidewater','Radiance','Eclipse'];
+const THEMES=['Parchment','Embershade','Dawnwarden','The Raven','Shadowsong','Reaver','Steelforged','Tidewater','Radiance','Eclipse','Flameborn','Tidewatcher','Windrider','Stonebreaker','Stormcaller','Cirtenos Silver','Farlos Tin','Jurn Brass','Nersi Copper','Sarlei Iron','Vortan Gold'];
 /* Neutral keys: real entry ids come from doc names and can contain hidden names, so nothing players can reach uses them. */
 const K=s=>{let h=0x811c9dc5;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)>>>0}return h.toString(36)};
 const slugify=s=>s.toLowerCase().replace(/[’'"]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
